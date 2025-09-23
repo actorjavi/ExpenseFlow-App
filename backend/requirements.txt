@@ -1,0 +1,17 @@
+# Workspace version: 1.45.30
+python-multipart==0.0.9
+ipykernel==6.29.5
+uvicorn[standard]==0.34.2
+databutton==0.38.34
+fastapi==0.115.12
+openai
+beautifulsoup4
+requests
+openpyxl
+google-auth-oauthlib
+google-api-python-client
+pytesseract
+Pillow
+google-cloud-vision
+firebase-admin
+python-magic
