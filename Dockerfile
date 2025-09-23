@@ -1,40 +1,37 @@
-# Usa una imagen oficial de Python como imagen base. La versión 'slim' es más ligera.
-FROM python:3.11-slim
-
-# Establece variables de entorno para optimizar la ejecución de Python en Docker.
-# PYTHONDONTWRITEBYTECODE: Evita que Python escriba archivos .pyc.
-# PYTHONUNBUFFERED: Asegura que los logs de Python se muestren en tiempo real.
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# --- Etapa 1: Build ---
+# Usa una imagen de Node.js ligera como base para la compilación.
+FROM node:20-alpine AS builder
 
 # Establece el directorio de trabajo dentro del contenedor.
 WORKDIR /app
 
-# Instala 'uv', el gestor de paquetes de Python que usa el proyecto.
-RUN pip install uv
+# Habilita Corepack para usar la versión de Yarn especificada en package.json.
+RUN corepack enable
 
-# Copia el fichero de dependencias primero para aprovechar el cache de capas de Docker.
-# Si este fichero no cambia, Docker no volverá a instalar las dependencias en builds futuros.
-COPY requirements.txt .
+# Copia los ficheros de definición de dependencias.
+# Aprovecha el cache de Docker: si no cambian, no se reinstalan las dependencias.
+COPY package.json yarn.lock* .yarnrc.yml ./
 
-# Instala las dependencias del proyecto usando 'uv'.
-RUN uv pip install --no-cache-dir -r requirements.txt
+# Instala las dependencias de forma "inmutable", ideal para CI/CD.
+RUN yarn install --immutable
 
-# Copia el resto del código de la aplicación del backend al directorio de trabajo.
+# Copia el resto del código fuente de la aplicación.
 COPY . .
 
-# Crea un usuario y un grupo sin privilegios de root por seguridad.
-RUN addgroup --system app && adduser --system --group app
+# Ejecuta el script de build para generar los archivos estáticos de producción.
+RUN yarn build
 
-# Cambia el propietario del directorio de la aplicación al nuevo usuario.
-RUN chown -R app:app /app
+# --- Etapa 2: Production ---
+# Usa una imagen de Nginx muy ligera para servir los archivos.
+FROM nginx:stable-alpine
 
-# Cambia al usuario no-root.
-USER app
+# Copia los archivos estáticos generados en la etapa de 'build' al directorio web de Nginx.
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expone el puerto 8000 para que la aplicación sea accesible desde fuera del contenedor.
-EXPOSE 8000
+# Copia la configuración personalizada de Nginx.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Comando para ejecutar la aplicación con Uvicorn.
-# Asume que tu fichero principal se llama 'main.py' y la instancia de FastAPI es 'app'.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expone el puerto 80, que es el puerto por defecto de Nginx.
+EXPOSE 80
+
+# El comando por defecto de la imagen de Nginx iniciará el servidor automáticamente.
