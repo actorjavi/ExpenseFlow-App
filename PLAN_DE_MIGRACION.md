@@ -10,7 +10,7 @@ Migrar la aplicación ExpenseFlow de Data Button a un entorno auto-gestionado.
     - [ ] Identificar todas las dependencias y servicios externos (Firebase Auth, Firestore, Google Drive).
 
 - [ ] **Configuración del Entorno Local (Docker):**
-    - [ ] Crear un `Dockerfile` para el backend.
+    - [x] Crear un `Dockerfile` para el backend.
     - [ ] Crear un `Dockerfile` para el frontend.
     - [ ] Crear un `docker-compose.yml` para gestionar ambos servicios.
 
